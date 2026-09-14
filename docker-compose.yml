@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: agent-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: agent_user
+      POSTGRES_PASSWORD: agent_pass
+      POSTGRES_DB: agent_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # 把 SQL 檔放進 ./init 資料夾，第一次啟動(空 volume 時)會自動依檔名順序執行，適合放建表 schema 或假資料 seed script
+      - ./init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_user -d agent_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 可選：輕量網頁版資料庫管理工具，方便你不用裝 client 就能在瀏覽器看資料表
+  adminer:
+    image: adminer:latest
+    container_name: agent-db-ui
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
