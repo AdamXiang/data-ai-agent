@@ -1,0 +1,48 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv/
+env/
+
+
+# Environment variables
+.env
+
+
+# uv related 
+.uv/
+
+
+# ============================================================
+# IDE & Editor
+# ============================================================
+# VSCode
+.vscode/
+*.code-workspace
+
+
+# ============================================================
+# Operating System
+# ============================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+
+# ============================================================
+# OS-specific Temporary Files
+# ============================================================
+.vscode-server/
+.vscode-extensions/
