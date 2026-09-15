@@ -1,9 +1,15 @@
+# Local development stack for the AI_Agent project: a Postgres database
+# seeded from ./init on first startup, plus a lightweight web UI (Adminer)
+# for browsing it. Not intended for production use.
 services:
   postgres:
     image: postgres:16-alpine
     container_name: agent-db
     restart: unless-stopped
     environment:
+      # NOTE: these are local-dev-only defaults, fine for a throwaway
+      # container on your machine. Do not reuse these credentials for
+      # anything reachable outside localhost.
       POSTGRES_USER: agent_user
       POSTGRES_PASSWORD: agent_pass
       POSTGRES_DB: agent_db
@@ -11,15 +17,18 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # 把 SQL 檔放進 ./init 資料夾，第一次啟動(空 volume 時)會自動依檔名順序執行，適合放建表 schema 或假資料 seed script
+      # Put the SQL file into ./init folder, it will be executed automatically on first startup (when volume is empty), suitable for creating table schemas or seeding dummy data
       - ./init:/docker-entrypoint-initdb.d
     healthcheck:
+      # Lets `depends_on: condition: service_healthy` (used by adminer
+      # below) wait for Postgres to actually be ready to accept
+      # connections, not just for the container process to have started.
       test: ["CMD-SHELL", "pg_isready -U agent_user -d agent_db"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # 可選：輕量網頁版資料庫管理工具，方便你不用裝 client 就能在瀏覽器看資料表
+  # Optional: lightweight web-based database management tool, convenient for viewing tables in the browser without installing a client
   adminer:
     image: adminer:latest
     container_name: agent-db-ui
