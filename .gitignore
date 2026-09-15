@@ -46,3 +46,10 @@ ehthumbs.db
 # ============================================================
 .vscode-server/
 .vscode-extensions/
+
+
+
+data/extract/
+data_agent_graph.png
+etl_analyst_graph.png
+sql_analyst_graph.png
