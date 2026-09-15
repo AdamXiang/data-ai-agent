@@ -9,11 +9,14 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "dotenv>=0.9.9",
+    "ipython>=9.17.1",
     "langchain>=1.4.0",
     "langchain-anthropic>=1.7.2",
     "langgraph>=1.2.11",
+    "pandas>=3.0.5",
     "psycopg2-binary>=2.9.13",
     "pydantic>=2.13.5",
+    "requests>=2.34.2",
 ]
 
 [project.scripts]
