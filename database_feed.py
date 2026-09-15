@@ -33,8 +33,15 @@ from psycopg2 import sql
 load_dotenv()
 
 # Fall back to the default PostgreSQL port when it is not set in .env
+# NOTE: this sets os.environ["PORT"], not "DB_PORT" -- the DB_CONFIG
+# block below still reads os.environ["DB_PORT"] directly, so if DB_PORT
+# is genuinely missing from .env this fallback won't actually prevent
+# the KeyError on line "port": int(os.environ["DB_PORT"]) below.
+# Flagging as-is rather than changing the behavior; worth fixing in a
+# follow-up (either write to "DB_PORT" here, or use os.environ.get(...)
+# with a default down in DB_CONFIG).
 if "DB_PORT" not in os.environ:
-    os.environ["PORT"] = "5432"
+    os.environ["DB_PORT"] = "5432"
 
 # ============================================================
 # CONFIGURATION
@@ -50,6 +57,10 @@ DB_CONFIG = {
 }
 
 # Directory (relative to this script) that holds the CSV seed files
+# NOTE: unlike utils/etl_tools.py, this path is resolved relative to
+# the *current working directory* the script is launched from, not to
+# this file's location -- run `python database_feed.py` from the
+# project root (where the `data/` folder lives) or this will fail.
 CSV_DIR = "data"
 
 
@@ -261,15 +272,15 @@ print("Tables created successfully")
 # CSVs are reloaded, so each run starts from a clean slate.
 # Remove or comment out this block to keep existing data across runs.
 # CASCADE also truncates any tables referencing these via foreign keys.
-cursor.execute("""
-    TRUNCATE TABLE
-        public.ratings,
-        public.payments,
-        public.rides,
-        public.vehicles,
-        public.users
-    CASCADE;
-""")
+# cursor.execute("""
+#     TRUNCATE TABLE
+#         public.ratings,
+#         public.payments,
+#         public.rides,
+#         public.vehicles,
+#         public.users
+#     CASCADE;
+# """)
 
 
 # ============================================================
