@@ -1,3 +1,16 @@
+"""PostgreSQL access layer used by the SQL analyst agent.
+
+This module wraps ``psycopg2`` behind a small ``Database`` class so the
+rest of the codebase doesn't have to deal with raw connections and
+cursors directly. It is used for two very different purposes:
+
+1. Describing a schema in plain English (``get_schema_details``) so it
+   can be dropped into an LLM prompt as context.
+2. Actually running the SQL query the LLM generates
+   (``execute_query``), after it has passed the safety check in
+   ``agents/sql_analyst.py``.
+"""
+
 import psycopg2
 
 
@@ -85,9 +98,7 @@ class Database:
                 )
                 # fetchall() returns a list of single-element tuples,
                 # e.g. [('users',), ('orders',), ('products',)]
-                tables = (
-                    cursor.fetchall()
-                )
+                tables = cursor.fetchall()
 
                 for table in tables:
                     table_name = table[0]
@@ -134,3 +145,48 @@ class Database:
             print(f"Error fetching schema details: {e}")
 
         return schema_info_content
+
+    def execute_query(self, query):
+        """Execute a SQL query and return the results.
+
+        Note:
+            This method executes whatever SQL string it is given -- it
+            does not itself check whether the query is read-only. Callers
+            (see ``agents/sql_analyst.py``'s safety-check node) are
+            responsible for making sure only vetted, read-only queries
+            reach this method.
+
+        Args:
+            query (str): The SQL query to execute.
+
+        Returns:
+            list | None: A list of tuples representing the query results,
+            or ``None`` if the query failed or there is no active connection.
+        """
+        # Bail out early, same as get_schema_details, if the constructor
+        # never managed to open a connection.
+        if not self.connection:
+            print("No database connection.")
+            return
+
+        try:
+            with self.connection.cursor() as cursor:
+                # Run the caller-supplied SQL as-is.
+                cursor.execute(query)
+
+                # fetchall() works for SELECT statements. If a
+                # non-SELECT statement ever reaches here, this call will
+                # raise, which is caught below.
+                results = cursor.fetchall()
+
+                # Commit so the transaction doesn't stay open/locked
+                # even for read-only queries.
+                self.connection.commit()
+                return results
+        except psycopg2.Error as e:
+            print(f"Error executing query: {e}")
+
+            # Roll back so a failed query doesn't leave the connection in
+            # an aborted-transaction state that would break subsequent calls.
+            self.connection.rollback()
+            return
